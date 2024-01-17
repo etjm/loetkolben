@@ -1,7 +1,7 @@
 {
-    "configuration": "cpu=atmega328",
+    "configuration": "cpu=atmega328old",
     "board": "arduino:avr:nano",
     "programmer": "arduinoisp",
     "sketch": "loetkolben.ino",
-    "port": "/dev/tty.usbserial-AC00J6S1"
+    "port": "/dev/tty.usbserial-AC00J67T"
 }
