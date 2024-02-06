@@ -101,7 +101,7 @@ int test = 50;
 float p = 0.0;  // eine nachkomma stelle und 0.1 verstellbar
 float i = 0.00; // zwei nachkomma stellen und 0.01 verstellbar
 float d = 0.0;  // eine nachkomma stelle und 0.1 verstellbar
-int set = 100;    // sollwert
+int set = 100;  // sollwert
 int mes = 0;    // istWert
 
 int inWindow = 0;
@@ -139,6 +139,7 @@ bool openRestore = false;
 bool openP = false;
 bool openI = false;
 bool openD = false;
+int tester = 0;
 
 // stops the display from blinking
 bool initializeMainWindow = true;
@@ -146,7 +147,7 @@ bool stopInitializingMainWindow = false;
 bool selectAktiv = true;
 bool oneTimeOption = true;
 bool oneTimeOption2 = true;
-bool oneTimeOption3 = true;
+bool oneTimeOption3 = false;
 int buttonCounter = 2;
 bool test2 = false;
 bool oneTimeOption4 = false;
@@ -515,8 +516,8 @@ void openMainWindow()
 
   tft.setCursor(0, 17);
   tft.print("Ist:");
-  tft.setCursor(75, 0);
-  tft.print("100");
+  tft.setCursor(75, 17);
+  tft.print(mes);
   drawDegCel(120, 18);
 
   tft.setTextSize(1);
@@ -651,35 +652,35 @@ void resetSettings()
 
 void resetPwm()
 {
-    tft.setCursor(15, 20);
-    tft.fillRect(13, 18, 14, 18, ST7735_BLACK);
-    tft.setTextSize(2);
-    tft.print("P: 10");
+  tft.setCursor(15, 20);
+  tft.fillRect(13, 18, 14, 18, ST7735_BLACK);
+  tft.setTextSize(2);
+  tft.print("P: 10");
 
-    tft.setCursor(15, 42);
-    tft.fillRect(13, 40, 14, 18, ST7735_BLACK);
-    tft.setTextSize(2);
-    tft.print("I: 1");
+  tft.setCursor(15, 42);
+  tft.fillRect(13, 40, 14, 18, ST7735_BLACK);
+  tft.setTextSize(2);
+  tft.print("I: 1");
 
-    tft.setCursor(15, 64);
-    tft.fillRect(13, 62, 14, 18, ST7735_BLACK);
-    tft.setTextSize(2);
-    tft.print("D: 1");
+  tft.setCursor(15, 64);
+  tft.fillRect(13, 62, 14, 18, ST7735_BLACK);
+  tft.setTextSize(2);
+  tft.print("D: 1");
 
-    tft.setCursor(17, 100);
-    tft.fillRect(16, 99, 19, 9, ST7735_BLACK);
-    tft.setTextSize(1);
-    tft.print("Set");
+  tft.setCursor(17, 100);
+  tft.fillRect(16, 99, 19, 9, ST7735_BLACK);
+  tft.setTextSize(1);
+  tft.print("Set");
 
-    tft.setCursor(50, 100);
-    tft.fillRect(49, 99, 36, 9, ST7735_BLACK);
-    tft.setTextSize(1);
-    tft.print("Cancel");
+  tft.setCursor(50, 100);
+  tft.fillRect(49, 99, 36, 9, ST7735_BLACK);
+  tft.setTextSize(1);
+  tft.print("Cancel");
 
-    tft.setCursor(100, 100);
-    tft.fillRect(99, 99, 43, 9, ST7735_BLACK);
-    tft.setTextSize(1);
-    tft.print("Restore");
+  tft.setCursor(100, 100);
+  tft.fillRect(99, 99, 43, 9, ST7735_BLACK);
+  tft.setTextSize(1);
+  tft.print("Restore");
 }
 
 void selectSettings()
@@ -855,67 +856,79 @@ bool smoothButton()
   return buttonhit;
 }
 
-void changeP(){
-
+void changeP()
+{
 }
 
-void changeI(){
-
+void changeI()
+{
 }
 
-void changeD(){
-
+void changeD()
+{
 }
 
-void changeSmartStandby(){
-
+void changeSmartStandby()
+{
 }
 
-void changeTimeTillStandby(){
-
+void changeTimeTillStandby()
+{
 }
 
-void changeNumberOfCh(){
-
+void changeNumberOfCh()
+{
 }
-
-
 
 void changeSollTemp()
 {
-
   if (state == click)
   {
     selectAktiv = false;
     initializeMainWindow = false;
     stopInitializingMainWindow = true;
   }
-  if(counter > counterLastState2){
-    // erhöhe soll temperatur
-    set = set + 5;
-    tft.setTextSize(2);
-    tft.setCursor(75, 0);
-    tft.print(set);
-  }else if(counter < counterLastState2){
-    //verringer soll temperatur
-    set = set - 5;
-    tft.setTextSize(2);
-    tft.setCursor(75, 0);
-    tft.print(set);
-  }
 
-  if (state == click){
+  if(state == click){
+    if (oneTimeOption3)
+    {
+      initializeMainWindow = true;
+      stopInitializingMainWindow = false;
+      selectAktiv = true; // aktiviert SelectFunktion wieder
+      changeSollTempBool = false;
+      oneTimeOption3 = false;
+    }
+  }
+  
+
+  if (state == click)
+  {
+    tester++;
     oneTimeOption3 = true;
   }
 
-  if (oneTimeOption3)
-  {
-    initializeMainWindow = true;
-    stopInitializingMainWindow = false;
-    selectAktiv = true;    // aktiviert SelectFunktion wieder
-    changeSollTempBool = false;
+  if(tester == 2){
     oneTimeOption3 = false;
+    tester = 0;
   }
+
+
+  tft.setTextSize(2);
+  tft.setCursor(75, 0);
+  if (counter > counterLastState2)
+  {
+    // erhöhe soll temperatur
+    tft.fillRect(65, 0, 45, 15, ST7735_BLACK);
+    set = set += 5;
+  }
+  else if (counter < counterLastState2)
+  {
+    // verringer soll temperatur
+    tft.fillRect(65, 0, 45, 15, ST7735_BLACK);
+    set = set -= 5;
+  }
+  tft.print(set);
+  counterLastState2 = counter;
 }
 
 void loop()
@@ -955,17 +968,6 @@ void loop()
     counterLastState = counter;
   }
 
-  /*if (counter >= counterLastState)
-  {
-    counterLastState = counter;
-  }
-  else if (counter <= counterLastState)
-  {
-
-    counterLastState = counter;
-  }*/
-  if (oneTimeOption3)
-  {
     if (state == click)
     {
       Serial.print("Test");
@@ -985,20 +987,18 @@ void loop()
         break;
       }
     }
-  }
+
   if (openSettingsWindowBool)
   {
-    // oneTimeOption3 = false;
     openSettingsWindow();
   }
   if (openPIDWindowBool)
   {
-    // oneTimeOption3 = false;
     openPIDWindow();
   }
   if (changeSollTempBool)
   {
-    // oneTimeOption3 = false;
+    Serial.print("asd");
     changeSollTemp();
   }
   /*
