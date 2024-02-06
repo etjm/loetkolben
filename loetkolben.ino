@@ -22,6 +22,51 @@
 // uint16_t ?  = 0bRRRRRGGGGGGBBBBB;
 uint16_t COLOR_GRAY = 0b0100001000001000;
 
+enum button
+{
+  noClick,
+  click,
+  release
+};
+
+enum selectedFieldSettings
+{
+  NONE_SETTINGS,
+  SMART_STANDBY,
+  STANDBY_TIMER,
+  NUMBER_OF_CH,
+  CANCEL_SETTINGS,
+  SET_SETTINGS,
+  RESTORE_SETTINGS
+};
+
+enum selectedFieldPwm
+{
+  NONE_PWM,
+  P,
+  I,
+  D,
+  CANCEL_PWM,
+  SET_PWM,
+  RESTORE_PWM
+};
+
+enum selectedField1
+{
+  NONE,
+  SOLL,
+  PWM,
+  SETTINGS,
+  CANCEL,
+  SET,
+  RESTORE
+};
+
+selectedFieldSettings fieldStateSettings = selectedFieldSettings::NONE_SETTINGS;
+selectedFieldPwm fieldStatePwm = selectedFieldPwm::NONE_PWM;
+selectedField1 fieldStateMain = selectedField1::NONE;
+button state = button::noClick;
+
 unsigned long encTime1 = 0;
 unsigned long encTime2 = 0;
 
@@ -43,7 +88,7 @@ char window_prev = 0;
 int temperature = 100;
 float Set = 0.0;
 float Mes = 100.0;
-int PWM = 0;
+int pwm = 0;
 float prevSet = 0.0;
 float prevMes = 0.0;
 int prevPWM = 1;
@@ -52,6 +97,12 @@ char history[HistSize] = {0};
 char history2[HistSize] = {0};
 int currentHistPos = 0;
 int test = 50;
+
+float p = 0.0;  // eine nachkomma stelle und 0.1 verstellbar
+float i = 0.00; // zwei nachkomma stellen und 0.01 verstellbar
+float d = 0.0;  // eine nachkomma stelle und 0.1 verstellbar
+int set = 100;    // sollwert
+int mes = 0;    // istWert
 
 int inWindow = 0;
 int buttonClicked = 0;
@@ -73,6 +124,22 @@ int counterSettings2 = 0;
 bool selectSettingsAktiv = false;
 bool buttonhit = false;
 bool buttonhit2 = false;
+
+int counterLastState = 0;
+int counterLastState2 = 0;
+bool openSettingsWindowBool = false;
+bool openPIDWindowBool = false;
+bool changeSollTempBool = false;
+bool openSmartStandby = false;
+bool openStandbyTimer = false;
+bool openNumberOfCh = false;
+bool openCancel = false;
+bool openSet = false;
+bool openRestore = false;
+bool openP = false;
+bool openI = false;
+bool openD = false;
+
 // stops the display from blinking
 bool initializeMainWindow = true;
 bool stopInitializingMainWindow = false;
@@ -228,42 +295,17 @@ void drawScreen1Dyn()
 // counter zurücksetzten noch optimieren
 void openSettingsWindow()
 {
-  // counter2 speichern counter und selectAktiv stopt die SelectFunktion
-  //  if buttons is clicked
-  if (oneTimeOption3)
+  if (counter != counterLastState2)
   {
-    if (buttonState && buttonClicked == 0)
+    if (selectSettingsAktiv)
     {
-      buttonClicked++;
-      tempMemory = counter2;
-      selectAktiv = false;
-      // selectSettingsAktiv = true;
-      counterSettings = 0;
-      counterSettings2 = 0;
-      tempMemoryButtonState = buttonState;
-      buttonhit2 = true;
+      selectSettings();
     }
+    counterLastState2 = counter;
   }
-  if (counterSettings != counterSettings2)
-  {
-    if ((counterSettings > counterSettings2 || counterSettings < counterSettings2) && buttonhit2) //&& buttonhit == false
-    {
-      // button einfügen für die zweite ebene
-      //button hit setzt selectSettingsAktiv nicht auf false;
-      if (selectSettingsAktiv)
-      {
-        // aktivierung dieser Funktion passt nicht
-        selectSettings();
-      }
-      counterSettings2 = counterSettings;
-    }
-  }
-
-  // button handling anpassen, wenn selectSettingsFunktion betreten
-  // button in dieser funktion pausieren und eine ebene tiefer weiterführen
 
   // erster klick, öffnet fenster
-  if ((buttonClicked % 2) == true && oneTimeOption2)
+  if (state == click)
   {
     // nur bei jedem ersten öffnen neu anzeigen
     tft.fillScreen(ST7735_BLACK);
@@ -293,29 +335,67 @@ void openSettingsWindow()
 
     tft.setCursor(100, 85);
     tft.print("Restore");
-    tempMemoryButtonState = buttonState;
+    // tempMemoryButtonState = buttonState;
     stopInitializingMainWindow = true;
-    oneTimeOption2 = false;
-    oneTimeOption3 = false;
+    // oneTimeOption2 = false;
+    // oneTimeOption3 = false;
     selectSettingsAktiv = true;
+
+    selectAktiv = false;
   }
-  // zweiter klick schließt fenster wieder und hebt beschränkungen wieder auf
-  if (oneTimeOption3)
+
+  if (state == click)
   {
-    if (!buttonState && stopInitializingMainWindow)
+    switch (fieldStateSettings)
     {
-      // if (test2)
-      //{
-      initializeMainWindow = true;
-      stopInitializingMainWindow = false;
-      buttonClicked = 0;
-      oneTimeOption2 = true; // sorgt dafür das das Fenster nur bei jedem ersten Aufruf initialisiert wird(sonst flackert display)
-      selectAktiv = true;    // aktiviert SelectFunktion wieder
-      counter2 = tempMemory; // setzt Counter zurück
-      selectSettingsAktiv = false;
-      buttonhit2 = false;
-      //}
+    case SMART_STANDBY:
+      openSmartStandby = true;
+      break;
+    case STANDBY_TIMER:
+      openStandbyTimer = true;
+      break;
+    case NUMBER_OF_CH:
+      openNumberOfCh = true;
+      break;
+    case CANCEL:
+      openCancel = true;
+      break;
+    case SET:
+      openSet = true;
+      break;
+    case RESTORE:
+      openRestore = true;
+      break;
+    default:
+      break;
     }
+  }
+  if (openSmartStandby)
+  {
+  }
+  if (openStandbyTimer)
+  {
+  }
+  if (openNumberOfCh)
+  {
+  }
+  if (openCancel)
+  {
+    openSmartStandby = false;
+    openStandbyTimer = false;
+    openNumberOfCh = false;
+    openSet = false;
+    openCancel = false;
+    openRestore = false;
+    openSettingsWindowBool = false;
+    initializeMainWindow = true;
+    selectAktiv = true;
+  }
+  if (openSet)
+  {
+  }
+  if (openRestore)
+  {
   }
 }
 
@@ -323,14 +403,18 @@ void openPIDWindow()
 {
   // counter2 speichern counter und selectAktiv stopt die SelectFunktion
   //  if buttons is clicked
-  if (buttonState && buttonClicked == 0)
+
+  if (counter != counterLastState2)
   {
-    buttonClicked++;
-    tempMemory = counter2;
-    selectAktiv = false;
+    if (selectSettingsAktiv)
+    {
+      selectPWM();
+    }
+    counterLastState2 = counter;
   }
+
   // erster klick, öffnet fenster
-  if ((buttonClicked % 2) == true && oneTimeOption)
+  if (state == click)
   {
     tft.fillScreen(ST7735_BLACK);
 
@@ -360,17 +444,62 @@ void openPIDWindow()
     tft.setCursor(100, 100);
     tft.print("Restore");
     stopInitializingMainWindow = true;
-    oneTimeOption = false;
+    selectSettingsAktiv = true;
+    selectAktiv = false;
   }
-  // zweiter klick schließt fenster wieder und hebt beschränkungen wieder auf
-  if (!buttonState && stopInitializingMainWindow)
+
+  if (state == click)
   {
+    switch (fieldStatePwm)
+    {
+    case P:
+      openP = true;
+      break;
+    case I:
+      openI = true;
+      break;
+    case D:
+      openD = true;
+      break;
+    case CANCEL:
+      openCancel = true;
+      break;
+    case SET:
+      openSet = true;
+      break;
+    case RESTORE:
+      openRestore = true;
+      break;
+    default:
+      break;
+    }
+  }
+  if (openP)
+  {
+  }
+  if (openI)
+  {
+  }
+  if (openD)
+  {
+  }
+  if (openCancel)
+  {
+    openSmartStandby = false;
+    openStandbyTimer = false;
+    openNumberOfCh = false;
+    openSet = false;
+    openCancel = false;
+    openRestore = false;
+    openPIDWindowBool = false;
     initializeMainWindow = true;
-    stopInitializingMainWindow = false;
-    buttonClicked = 0;
-    oneTimeOption = true;  // sorgt dafür das das Fenster nur bei jedem ersten Aufruf initialisiert wird(sonst flackert display)
-    selectAktiv = true;    // aktiviert SelectFunktion wieder
-    counter2 = tempMemory; // setzt Counter zurück
+    selectAktiv = true;
+  }
+  if (openSet)
+  {
+  }
+  if (openRestore)
+  {
   }
 }
 
@@ -381,7 +510,7 @@ void openMainWindow()
   tft.setCursor(0, 0);
   tft.print("Soll:");
   tft.setCursor(75, 0);
-  tft.print(temperature);
+  tft.print(set);
   drawDegCel(120, 0);
 
   tft.setCursor(0, 17);
@@ -466,6 +595,7 @@ void selectMain()
     // tft.drawRoundRect(0,0,55,15,10,ST7735_RED);
     tft.setCursor(0, 0);
     tft.print("Soll:");
+    fieldStateMain = SOLL;
     break;
   case 1:
     resetMain();
@@ -473,6 +603,7 @@ void selectMain()
     tft.fillRect(8, 33, 25, 10, ST7735_RED);
     tft.setTextSize(1);
     tft.print("PWM:");
+    fieldStateMain = PWM;
     break;
   case 0:
     resetMain();
@@ -480,6 +611,7 @@ void selectMain()
     tft.fillRect(9, 50, 49, 10, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Settings");
+    fieldStateMain = SETTINGS;
     break;
   }
 }
@@ -517,6 +649,39 @@ void resetSettings()
   tft.print("Restore");
 }
 
+void resetPwm()
+{
+    tft.setCursor(15, 20);
+    tft.fillRect(13, 18, 14, 18, ST7735_BLACK);
+    tft.setTextSize(2);
+    tft.print("P: 10");
+
+    tft.setCursor(15, 42);
+    tft.fillRect(13, 40, 14, 18, ST7735_BLACK);
+    tft.setTextSize(2);
+    tft.print("I: 1");
+
+    tft.setCursor(15, 64);
+    tft.fillRect(13, 62, 14, 18, ST7735_BLACK);
+    tft.setTextSize(2);
+    tft.print("D: 1");
+
+    tft.setCursor(17, 100);
+    tft.fillRect(16, 99, 19, 9, ST7735_BLACK);
+    tft.setTextSize(1);
+    tft.print("Set");
+
+    tft.setCursor(50, 100);
+    tft.fillRect(49, 99, 36, 9, ST7735_BLACK);
+    tft.setTextSize(1);
+    tft.print("Cancel");
+
+    tft.setCursor(100, 100);
+    tft.fillRect(99, 99, 43, 9, ST7735_BLACK);
+    tft.setTextSize(1);
+    tft.print("Restore");
+}
+
 void selectSettings()
 {
   // beim betreten der openSettingsFunktion, wird diese funktion aktiviert
@@ -530,6 +695,7 @@ void selectSettings()
     tft.fillRect(9, 14, 83, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Smart Standby:");
+    fieldStateSettings = SMART_STANDBY;
     break;
   case 4:
     resetSettings();
@@ -537,6 +703,7 @@ void selectSettings()
     tft.fillRect(9, 34, 107, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Time till Standby:");
+    fieldStateSettings = STANDBY_TIMER;
     break;
   case 3:
     resetSettings();
@@ -544,6 +711,7 @@ void selectSettings()
     tft.fillRect(9, 54, 77, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Number of Ch:");
+    fieldStateSettings = NUMBER_OF_CH;
     break;
   case 2:
     resetSettings();
@@ -551,6 +719,7 @@ void selectSettings()
     tft.fillRect(9, 84, 19, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Set");
+    fieldStateSettings = selectedFieldSettings::SET_SETTINGS;
     break;
   case 1:
     resetSettings();
@@ -558,6 +727,7 @@ void selectSettings()
     tft.fillRect(49, 84, 36, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Cancel");
+    fieldStateSettings = selectedFieldSettings::CANCEL_SETTINGS;
     break;
   case 0:
     resetSettings();
@@ -565,100 +735,65 @@ void selectSettings()
     tft.fillRect(99, 84, 43, 9, ST7735_RED);
     tft.setTextSize(1);
     tft.print("Restore");
+    fieldStateSettings = selectedFieldSettings::RESTORE_SETTINGS;
     break;
   }
-
-  // beim ersten entry buttonMemory = button state setzen 
-  if(oneTimeOption4){
-    buttonMemory = buttonState;
-    oneTimeOption4 = false;
-  }
-  // wenn buttonhit detected funktion aus switch auslösen und selectSettings deaktivieren
-  if (buttonState != buttonMemory)
-  {
-    counter4++;
-    //später true setzen
-    test2 = true;
-    buttonMemory = buttonState;
-  }
-
-  if (test2)
-  {
-    switch (counterSettings % 6)
-    {
-    case 5:
-      // Smart Standby
-      // beim ersten klick true und beim zweiten wieder false setzen
-      buttonhit2 = false;
-      break;
-    case 4:
-      // Time till Standby
-      break;
-    case 3:
-      // Number of Ch
-      break;
-    case 2:
-      // Set
-      break;
-    case 1:
-      // Cancel
-      // buttonState zurücksetzen
-      // andere sachen zurücksetzen
-      // zurücksetzung erfolgt nicht zu 100
-      buttonCounter = 2;
-      oneTimeOption3 = true;
-      counterSettings = 0;
-      //nicht richtig zurück gesetzt
-      buttonhit2 = false;
-
-      initializeMainWindow = true;
-      stopInitializingMainWindow = false;
-      buttonClicked = 0;
-      counterSettings2 = 0;
-      oneTimeOption2 = true; // sorgt dafür das das Fenster nur bei jedem ersten Aufruf initialisiert wird(sonst flackert display)
-      selectAktiv = true;    // aktiviert SelectFunktion wieder
-      counter2 = tempMemory; // setzt Counter zurück
-      selectSettingsAktiv = false;
-      buttonState = false;
-      test2 = false;
-      oneTimeOption4 = true;
-
-
-
-      /*
-      // alle zurücksetzen
-      counter2 = 0;
-      counter3 = 0;
-      buttonhit = false;
-      oneTimeOption3 = true;
-      buttonState = false; // button counter = 2 setzen;
-      buttonClicked = 0;
-      tempMemory = 0;
-      selectAktiv = true;
-      counterSettings = 0;
-      counterSettings2 = 0;
-      buttonhit2 = false;
-      oneTimeOption2 = true;
-      tempMemoryButtonState = false;
-      stopInitializingMainWindow = false;
-      selectSettingsAktiv = false;
-      initializeMainWindow = true;
-
-
-      */
-      break;
-    case 0:
-      // Restore
-      break;
-    default:
-      break;
-    }
-  }
-  
 }
 
 void selectPWM()
 {
+
+  switch (counterSettings % 6)
+  {
+  case 5:
+    resetPwm();
+    tft.setCursor(15, 20);
+    tft.fillRect(13, 18, 14, 18, ST7735_RED);
+    tft.setTextSize(2);
+    tft.print("P: 10");
+    fieldStatePwm = P;
+    break;
+  case 4:
+    resetPwm();
+    tft.setCursor(15, 42);
+    tft.fillRect(13, 40, 14, 18, ST7735_RED);
+    tft.setTextSize(2);
+    tft.print("I: 1");
+    fieldStatePwm = I;
+    break;
+  case 3:
+    resetPwm();
+    tft.setCursor(15, 64);
+    tft.fillRect(13, 62, 14, 18, ST7735_RED);
+    tft.setTextSize(2);
+    tft.print("D: 1");
+    fieldStatePwm = D;
+    break;
+  case 2:
+    resetPwm();
+    tft.setCursor(17, 100);
+    tft.fillRect(16, 99, 19, 9, ST7735_RED);
+    tft.setTextSize(1);
+    tft.print("Set");
+    fieldStatePwm = selectedFieldPwm::SET_PWM;
+    break;
+  case 1:
+    resetPwm();
+    tft.setCursor(50, 100);
+    tft.fillRect(49, 99, 36, 9, ST7735_RED);
+    tft.setTextSize(1);
+    tft.print("Cancel");
+    fieldStatePwm = selectedFieldPwm::CANCEL_PWM;
+    break;
+  case 0:
+    resetPwm();
+    tft.setCursor(100, 100);
+    tft.fillRect(99, 99, 43, 9, ST7735_RED);
+    tft.setTextSize(1);
+    tft.print("Restore");
+    fieldStatePwm = selectedFieldPwm::RESTORE_PWM;
+    break;
+  }
 }
 
 void drawGraph()
@@ -703,7 +838,7 @@ bool smoothButton()
   }*/
   if (buttonState1 != buttonLastState)
   {
-    //Serial.println("hit");
+    // Serial.println("hit");
     buttonCounter++;
     buttonLastState = buttonState1;
   }
@@ -720,39 +855,75 @@ bool smoothButton()
   return buttonhit;
 }
 
+void changeP(){
+
+}
+
+void changeI(){
+
+}
+
+void changeD(){
+
+}
+
+void changeSmartStandby(){
+
+}
+
+void changeTimeTillStandby(){
+
+}
+
+void changeNumberOfCh(){
+
+}
+
+
+
 void changeSollTemp()
 {
 
-  if (buttonState && buttonClicked == 0)
+  if (state == click)
   {
-    buttonClicked++;
-    tempMemory = counter2;
     selectAktiv = false;
     initializeMainWindow = false;
-    counter = 0;
     stopInitializingMainWindow = true;
   }
-  if ((buttonClicked % 2) == true)
-  {
-    //Serial.println("selectedField");
-    //Serial.println(temperature);
-    // hier temperatur ändern
+  if(counter > counterLastState2){
+    // erhöhe soll temperatur
+    set = set + 5;
+    tft.setTextSize(2);
+    tft.setCursor(75, 0);
+    tft.print(set);
+  }else if(counter < counterLastState2){
+    //verringer soll temperatur
+    set = set - 5;
+    tft.setTextSize(2);
+    tft.setCursor(75, 0);
+    tft.print(set);
   }
-  if (!buttonState && stopInitializingMainWindow)
+
+  if (state == click){
+    oneTimeOption3 = true;
+  }
+
+  if (oneTimeOption3)
   {
     initializeMainWindow = true;
     stopInitializingMainWindow = false;
-    buttonClicked = 0;
     selectAktiv = true;    // aktiviert SelectFunktion wieder
-    counter2 = tempMemory; // setzt Counter zurück
+    changeSollTempBool = false;
+    oneTimeOption3 = false;
   }
 }
 
 void loop()
 {
+  readButton();
   buttonState = smoothButton();
   delay(100);
-  Serial.print(selectSettingsAktiv);
+  // Serial.print(selectSettingsAktiv);
 
   /*
   PIDHeater1.setSetpoint(Set);
@@ -766,7 +937,7 @@ void loop()
   tft.setTextSize(2);
   */
 
-
+  // deaktivieren damit display nicht flackert
   if (initializeMainWindow)
   {
     openMainWindow();
@@ -774,18 +945,63 @@ void loop()
   }
   // drawGraph();
 
-  if (counter2 != counter3)
+  // schauen das display nicht flackert
+  if (counter != counterLastState)
   {
-    if ((counter2 > counter3 || counter2 < counter3) && buttonhit == false)
-    {
-      if (selectAktiv)
-      { // selectAktiv wenn im window select nicht möglich und counter zurück setzten wo war zum zeit des betreten des fensters
-        selectMain();
-      }
-      counter3 = counter2;
+    if (selectAktiv)
+    { // selectAktiv wenn im window select nicht möglich und counter zurück setzten wo war zum zeit des betreten des fensters
+      selectMain();
     }
+    counterLastState = counter;
   }
 
+  /*if (counter >= counterLastState)
+  {
+    counterLastState = counter;
+  }
+  else if (counter <= counterLastState)
+  {
+
+    counterLastState = counter;
+  }*/
+  if (oneTimeOption3)
+  {
+    if (state == click)
+    {
+      Serial.print("Test");
+      switch (fieldStateMain)
+      {
+      case SETTINGS:
+        openSettingsWindowBool = true;
+        break;
+      case PWM:
+        openPIDWindowBool = true;
+        break;
+      case SOLL:
+        changeSollTempBool = true;
+        break;
+
+      default:
+        break;
+      }
+    }
+  }
+  if (openSettingsWindowBool)
+  {
+    // oneTimeOption3 = false;
+    openSettingsWindow();
+  }
+  if (openPIDWindowBool)
+  {
+    // oneTimeOption3 = false;
+    openPIDWindow();
+  }
+  if (changeSollTempBool)
+  {
+    // oneTimeOption3 = false;
+    changeSollTemp();
+  }
+  /*
   switch (counter3 % 3)
   {
   case 0:
@@ -800,50 +1016,50 @@ void loop()
 
   default:
     break;
-  }
+  }*/
 
   // test
 
   // showPWMState(heaterPid_Out);
 
   // if (Mes > MAX_TEMP){PWM=0;}
-  analogWrite(HEATING_PIN, PWM);
+  analogWrite(HEATING_PIN, pwm);
 }
 
 void showPWMState(float heaterPidOut)
 {
   // Show PWM State
-  if (PWM > 0)
+  if (pwm > 0)
     tft.fillRect(150, 10, 10, 10, ST77XX_YELLOW);
   else
     tft.fillRect(150, 10, 10, 10, ST77XX_BLACK);
 
-  if (PWM < 0)
-    PWM = 0;
-  if (PWM > 255)
-    PWM = 255;
+  if (pwm < 0)
+    pwm = 0;
+  if (pwm > 255)
+    pwm = 255;
 
   if (heaterPidOut <= 0.0)
   {
-    PWM = 0;
+    pwm = 0;
   }
   else if (heaterPidOut <= 255.0)
   {
-    PWM = (int)heaterPidOut;
+    pwm = (int)heaterPidOut;
   }
   else
   {
-    PWM = 255;
+    pwm = 255;
   }
 
   Mes = getTemp();
   if (!buttonState)
   {
-    PWM = round(Set) % 255;
+    pwm = round(Set) % 255;
   }
   else
   {
-    PWM = 0;
+    pwm = 0;
   }
 }
 
@@ -901,5 +1117,34 @@ void ISR2()
       encTime2 = intTime;
     }
     enc2 = state;
+  }
+}
+
+void readButton()
+{
+  // Read button
+  buttonState = digitalRead(inp_button);
+  // todo Inverse
+
+  // smooth Button
+  if (buttonDetected == true and buttonState == true and buttonTime + 50 < millis())
+  {
+    buttonDetected = false;
+  }
+  if (buttonDetected == false and buttonState == false)
+  {
+    buttonDetected = true;
+    buttonTime = millis();
+  }
+
+  // Edge detection
+  state = button::noClick;
+  if (buttonState != buttonLastState)
+  {
+    if (buttonState == true && buttonLastState == false)
+      state = button::release;
+    else if (buttonState == false && buttonLastState == true)
+      state = button::click;
+    buttonLastState = buttonState;
   }
 }
