@@ -104,8 +104,8 @@ float d = 1.0;  // eine nachkomma stelle und 0.1 verstellbar
 int set = 100;  // sollwert
 int mes = 0;    // istWert
 
-bool smartStandbyOn = true;
-int timeTillStandby = 30;
+String smartStandbyOn = "On";
+int timeTillStandby = 220;
 int numberOfCh = 2;
 
 int inWindow = 0;
@@ -146,7 +146,8 @@ bool openI = false;
 bool openD = false;
 int tester = 0;
 bool switchAktive = true;
-bool switchAktive2 = true;
+int lastCounterStatePwm = 0;
+selectedFieldPwm lastFieldStatePwm = NONE_PWM;
 
 // stops the display from blinking
 bool initializeMainWindow = true;
@@ -299,8 +300,6 @@ void drawScreen1Dyn()
 }
 // 160 * 128 pixel
 
-// funktioniert
-// counter zurücksetzten noch optimieren
 void openSettingsWindow()
 {
   if (counter != counterLastState2)
@@ -323,17 +322,16 @@ void openSettingsWindow()
     tft.setCursor(10, 15);
     tft.print("Smart Standby:");
     tft.setCursor(125, 15);
-    tft.print("On");
+    tft.print(smartStandbyOn);
 
     tft.setCursor(10, 35);
     tft.print("Time till Standby:");
-    tft.setCursor(125, 35);
-    tft.print("30s");
+    printTimeTillStandby();
 
     tft.setCursor(10, 55);
     tft.print("Number of Ch:");
     tft.setCursor(125, 55);
-    tft.print("2");
+    tft.print(numberOfCh);
 
     tft.setCursor(10, 85);
     tft.print("Set");
@@ -352,40 +350,46 @@ void openSettingsWindow()
     selectAktiv = false;
   }
 
-  if (state == click)
+  if (switchAktive)
   {
-    switch (fieldStateSettings)
+    if (state == click)
     {
-    case SMART_STANDBY:
-      openSmartStandby = true;
-      break;
-    case STANDBY_TIMER:
-      openStandbyTimer = true;
-      break;
-    case NUMBER_OF_CH:
-      openNumberOfCh = true;
-      break;
-    case CANCEL:
-      openCancel = true;
-      break;
-    case SET:
-      openSet = true;
-      break;
-    case RESTORE:
-      openRestore = true;
-      break;
-    default:
-      break;
+      switch (fieldStateSettings)
+      {
+      case SMART_STANDBY:
+        openSmartStandby = true;
+        break;
+      case STANDBY_TIMER:
+        openStandbyTimer = true;
+        break;
+      case NUMBER_OF_CH:
+        openNumberOfCh = true;
+        break;
+      case CANCEL:
+        openCancel = true;
+        break;
+      case SET:
+        openSet = true;
+        break;
+      case RESTORE:
+        openRestore = true;
+        break;
+      default:
+        break;
+      }
     }
   }
   if (openSmartStandby)
   {
+    changeSmartStandby();
   }
   if (openStandbyTimer)
   {
+    changeTimeTillStandby();
   }
   if (openNumberOfCh)
   {
+    changeNumberOfCh();
   }
   if (openCancel)
   {
@@ -411,7 +415,6 @@ void openPIDWindow()
 {
   // counter2 speichern counter und selectAktiv stopt die SelectFunktion
   //  if buttons is clicked
-  Serial.print("PID");
 
   if (counter != counterLastState2)
   {
@@ -431,15 +434,15 @@ void openPIDWindow()
     tft.setCursor(15, 20);
     tft.print("P:");
     tft.setCursor(45, 20);
-    tft.print(p,1);
+    tft.print(p, 1);
     tft.setCursor(15, 42);
     tft.print("I:");
     tft.setCursor(45, 42);
-    tft.print(i,2);
+    tft.print(i, 2);
     tft.setCursor(15, 64);
     tft.print("D:");
     tft.setCursor(45, 64);
-    tft.print(d,1);
+    tft.print(d, 1);
 
     tft.setTextSize(1);
     tft.setCursor(100, 6);
@@ -462,34 +465,35 @@ void openPIDWindow()
     selectSettingsAktiv = true;
     selectAktiv = false;
   }
-if(switchAktive){
-  if (state == click)
+  if (switchAktive)
   {
-    switch (fieldStatePwm)
+    if (state == click)
     {
-    case P:
-      openP = true;
-      break;
-    case I:
-      openI = true;
-      break;
-    case D:
-      openD = true;
-      break;
-    case CANCEL:
-      openCancel = true;
-      break;
-    case SET:
-      openSet = true;
-      break;
-    case RESTORE:
-      openRestore = true;
-      break;
-    default:
-      break;
+      switch (fieldStatePwm)
+      {
+      case P:
+        openP = true;
+        break;
+      case I:
+        openI = true;
+        break;
+      case D:
+        openD = true;
+        break;
+      case CANCEL:
+        openCancel = true;
+        break;
+      case SET:
+        openSet = true;
+        break;
+      case RESTORE:
+        openRestore = true;
+        break;
+      default:
+        break;
+      }
     }
   }
-}
   if (openP)
   {
     changeP();
@@ -516,9 +520,11 @@ if(switchAktive){
   }
   if (openSet)
   {
+    setPWM();
   }
   if (openRestore)
   {
+    restorePWM();
   }
 }
 
@@ -580,6 +586,32 @@ void drawThickLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t colo
   for (int i = 0; i < thickness; i++)
   {
     tft.drawLine(x0, starty + i, x1, starty + i, color);
+  }
+}
+
+// todo
+void setPWM()
+{
+}
+
+void restorePWM()
+{
+  if (state == click)
+  {
+    p = 10;
+    i = 1;
+    d = 1;
+    tft.setTextSize(2);
+    tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
+    tft.setCursor(45, 20);
+    tft.print(p, 1);
+    tft.fillRect(45, 42, 50, 15, ST7735_BLACK);
+    tft.setCursor(45, 42);
+    tft.print(i, 2);
+    tft.fillRect(45, 64, 50, 15, ST7735_BLACK);
+    tft.setCursor(45, 64);
+    tft.print(d, 1);
+    openRestore = false;
   }
 }
 
@@ -675,21 +707,21 @@ void resetPwm()
   tft.setTextSize(2);
   tft.print("P:");
   tft.setCursor(45, 20);
-  tft.print(p,1);
+  tft.print(p, 1);
 
   tft.setCursor(15, 42);
   tft.fillRect(13, 40, 14, 18, ST7735_BLACK);
   tft.setTextSize(2);
   tft.print("I:");
   tft.setCursor(45, 42);
-  tft.print(i,2);
+  tft.print(i, 2);
 
   tft.setCursor(15, 64);
   tft.fillRect(13, 62, 14, 18, ST7735_BLACK);
   tft.setTextSize(2);
   tft.print("D:");
   tft.setCursor(45, 64);
-  tft.print(d,1);
+  tft.print(d, 1);
 
   tft.setCursor(17, 100);
   tft.fillRect(16, 99, 19, 9, ST7735_BLACK);
@@ -776,8 +808,8 @@ void selectPWM()
     tft.fillRect(13, 18, 14, 18, ST7735_RED);
     tft.setTextSize(2);
     tft.print("P:");
-    tft.setCursor(45,20);
-    tft.print(p,1);
+    tft.setCursor(45, 20);
+    tft.print(p, 1);
     fieldStatePwm = P;
     break;
   case 4:
@@ -786,8 +818,8 @@ void selectPWM()
     tft.fillRect(13, 40, 14, 18, ST7735_RED);
     tft.setTextSize(2);
     tft.print("I:");
-    tft.setCursor(45,42);
-    tft.print(i,2);
+    tft.setCursor(45, 42);
+    tft.print(i, 2);
     fieldStatePwm = I;
     break;
   case 3:
@@ -796,8 +828,8 @@ void selectPWM()
     tft.fillRect(13, 62, 14, 18, ST7735_RED);
     tft.setTextSize(2);
     tft.print("D:");
-    tft.setCursor(45,64);
-    tft.print(d,1);
+    tft.setCursor(45, 64);
+    tft.print(d, 1);
     fieldStatePwm = D;
     break;
   case 2:
@@ -864,12 +896,10 @@ bool smoothButton()
   }
   /*if (buttonState1 == false && buttonLastState == true)
   {
-    Serial.println("hit");
     buttonLastState = buttonState1;
   }*/
   if (buttonState1 != buttonLastState)
   {
-    // Serial.println("hit");
     buttonCounter++;
     buttonLastState = buttonState1;
   }
@@ -888,9 +918,12 @@ bool smoothButton()
 
 void changeP()
 {
-  if(tester == 0){
+  if (tester == 0)
+  {
     // eintritts position speicher mit status
     counterLastState3 = counter;
+    lastCounterStatePwm = counterSettings;
+    lastFieldStatePwm = fieldStatePwm;
   }
   if (state == click)
   {
@@ -901,41 +934,44 @@ void changeP()
 
   tft.setTextSize(2);
   tft.setCursor(15, 20);
+  tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
   if (counter > counterLastState3)
   {
     // erhöhe p
-    Serial.print("12345");
-    tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
     p = p += 0.1;
   }
   else if (counter < counterLastState3)
   {
     // verringer p
-    tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
     p = p -= 0.1;
   }
-  tft.setCursor(45,20);
+  tft.setCursor(45, 20);
   tft.setTextColor(ST7735_ORANGE);
-  tft.print(p,1);
+  tft.print(p, 1);
   tft.setTextColor(ST7735_YELLOW);
   counterLastState3 = counter;
-  if(tester == 2){
-    tft.setCursor(45,20);
-    tft.print(p,1);
+  if (tester == 2)
+  {
+    tft.setCursor(45, 20);
+    tft.print(p, 1);
     openP = false;
     selectSettingsAktiv = true;
     switchAktive = true;
     tester = 0;
-    //auf selected position vom eintritt zurück setzen
+    // auf selected position vom eintritt zurück setzen
+    counterSettings = lastCounterStatePwm;
+    fieldStatePwm = lastFieldStatePwm;
   }
-  
 }
 
 void changeI()
 {
-  if(tester == 0){
-    // eintritts position speicher mit status
+  if (tester == 0)
+  {
     counterLastState3 = counter;
+    // eintritts position speicher mit status
+    lastCounterStatePwm = counterSettings;
+    lastFieldStatePwm = fieldStatePwm;
   }
   if (state == click)
   {
@@ -960,25 +996,31 @@ void changeI()
   }
   tft.setCursor(45, 42);
   tft.setTextColor(ST7735_ORANGE);
-  tft.print(i,2);
+  tft.print(i, 2);
   tft.setTextColor(ST7735_YELLOW);
   counterLastState3 = counter;
-  if(tester == 2){
+  if (tester == 2)
+  {
     tft.setCursor(45, 42);
-    tft.print(i,2);
+    tft.print(i, 2);
     openI = false;
     selectSettingsAktiv = true;
     switchAktive = true;
     tester = 0;
-    //auf selected position vom eintritt zurück setzen
+    // auf selected position vom eintritt zurück setzen
+    counterSettings = lastCounterStatePwm;
+    fieldStatePwm = lastFieldStatePwm;
   }
 }
 
 void changeD()
 {
-  if(tester == 0){
+  if (tester == 0)
+  {
     // eintritts position speicher mit status
     counterLastState3 = counter;
+    lastCounterStatePwm = counterSettings;
+    lastFieldStatePwm = fieldStatePwm;
   }
   if (state == click)
   {
@@ -1003,26 +1045,97 @@ void changeD()
   }
   tft.setCursor(45, 64);
   tft.setTextColor(ST7735_ORANGE);
-  tft.print(d,1);
+  tft.print(d, 1);
   tft.setTextColor(ST7735_YELLOW);
   counterLastState3 = counter;
-  if(tester == 2){
+  if (tester == 2)
+  {
     tft.setCursor(45, 64);
-    tft.print(d,1);
+    tft.print(d, 1);
     openD = false;
     selectSettingsAktiv = true;
     switchAktive = true;
     tester = 0;
-    //auf selected position vom eintritt zurück setzen
+    // auf selected position vom eintritt zurück setzen
+    counterSettings = lastCounterStatePwm;
+    fieldStatePwm = lastFieldStatePwm;
   }
 }
 
 void changeSmartStandby()
 {
+  if(state == click){
+    tft.fillRect(125, 15, 20, 7, ST7735_BLACK);
+    if(smartStandbyOn == "On"){
+      smartStandbyOn = "Off";
+    }else{
+      smartStandbyOn = "On";
+    }
+    tft.setCursor(125, 15);
+    tft.print(smartStandbyOn);
+  }
 }
 
 void changeTimeTillStandby()
 {
+  if (tester == 0)
+  {
+    // eintritts position speicher mit status
+    counterLastState3 = counter;
+    lastCounterStatePwm = counterSettings;
+    lastFieldStatePwm = fieldStatePwm;
+  }
+
+  if (state == click)
+  {
+    selectSettingsAktiv = false;
+    tester++;
+    switchAktive = false;
+  }
+
+  tft.setTextSize(1);
+  tft.fillRect(125, 35, 20, 7, ST7735_BLACK);
+  if (counter > counterLastState3)
+  {
+    // erhöhe timeTillStandby
+    timeTillStandby = timeTillStandby += 1;
+  }
+  else if (counter < counterLastState3)
+  {
+    // verringer timeTillStandby
+    timeTillStandby = timeTillStandby -= 1;
+  }
+  tft.setTextColor(ST7735_ORANGE);
+  printTimeTillStandby();
+  tft.setTextColor(ST7735_YELLOW);
+  counterLastState3 = counter;
+  if (tester == 2)
+  {
+    printTimeTillStandby();
+    openStandbyTimer = false;
+    selectSettingsAktiv = true;
+    switchAktive = true;
+    tester = 0;
+    // auf selected position vom eintritt zurück setzen
+    counterSettings = lastCounterStatePwm;
+    fieldStatePwm = lastFieldStatePwm;
+  }
+}
+
+void printTimeTillStandby()
+{
+  tft.setCursor(125, 35);
+  tft.print(timeTillStandby);
+  if (timeTillStandby > 99)
+  {
+    tft.setCursor(143, 35);
+    tft.print("s");
+  }
+  else
+  {
+    tft.setCursor(137, 35);
+    tft.print("s");
+  }
 }
 
 void changeNumberOfCh()
@@ -1031,6 +1144,10 @@ void changeNumberOfCh()
 
 void changeSollTemp()
 {
+  if (tester == 0)
+  {
+    counterLastState2 = counter;
+  }
   if (state == click)
   {
     selectAktiv = false;
@@ -1064,19 +1181,20 @@ void changeSollTemp()
 
   tft.setTextSize(2);
   tft.setCursor(75, 0);
+  tft.fillRect(65, 0, 45, 15, ST7735_BLACK);
   if (counter > counterLastState2)
   {
     // erhöhe soll temperatur
-    tft.fillRect(65, 0, 45, 15, ST7735_BLACK);
     set = set += 5;
   }
   else if (counter < counterLastState2)
   {
     // verringer soll temperatur
-    tft.fillRect(65, 0, 45, 15, ST7735_BLACK);
     set = set -= 5;
   }
+  tft.setTextColor(ST7735_ORANGE);
   tft.print(set);
+  tft.setTextColor(ST7735_YELLOW);
   counterLastState2 = counter;
 }
 
@@ -1085,7 +1203,6 @@ void loop()
   readButton();
   buttonState = smoothButton();
   delay(100);
-  // Serial.print(selectSettingsAktiv);
 
   /*
   PIDHeater1.setSetpoint(Set);
@@ -1117,10 +1234,8 @@ void loop()
     counterLastState = counter;
   }
 
-  //if(switchAktive2){
   if (state == click)
   {
-    Serial.print("Test");
     switch (fieldStateMain)
     {
     case SETTINGS:
@@ -1137,7 +1252,7 @@ void loop()
       break;
     }
   }
-  //}
+
   if (openSettingsWindowBool)
   {
     openSettingsWindow();
@@ -1150,24 +1265,6 @@ void loop()
   {
     changeSollTemp();
   }
-  /*
-  switch (counter3 % 3)
-  {
-  case 0:
-    openSettingsWindow();
-    break;
-  case 1:
-    // openPIDWindow();
-    break;
-  case 2:
-    changeSollTemp();
-    break;
-
-  default:
-    break;
-  }*/
-
-  // test
 
   // showPWMState(heaterPid_Out);
 
