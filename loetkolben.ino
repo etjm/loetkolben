@@ -105,7 +105,7 @@ int set = 100;  // sollwert
 int mes = 0;    // istWert
 
 String smartStandbyOn = "On";
-int timeTillStandby = 220;
+int timeTillStandby = 30;
 int numberOfCh = 2;
 
 int inWindow = 0;
@@ -148,6 +148,7 @@ int tester = 0;
 bool switchAktive = true;
 int lastCounterStatePwm = 0;
 selectedFieldPwm lastFieldStatePwm = NONE_PWM;
+bool setFieldStateToDefault = true;
 
 // stops the display from blinking
 bool initializeMainWindow = true;
@@ -349,6 +350,12 @@ void openSettingsWindow()
 
     selectAktiv = false;
   }
+  // prevents from instandly going in to a setting after entering the menu
+  if (setFieldStateToDefault)
+  {
+    fieldStateSettings = NONE_SETTINGS;
+    setFieldStateToDefault = false;
+  }
 
   if (switchAktive)
   {
@@ -402,6 +409,7 @@ void openSettingsWindow()
     openSettingsWindowBool = false;
     initializeMainWindow = true;
     selectAktiv = true;
+    setFieldStateToDefault = true;
   }
   if (openSet)
   {
@@ -465,6 +473,14 @@ void openPIDWindow()
     selectSettingsAktiv = true;
     selectAktiv = false;
   }
+
+    // prevents from instandly going in to a setting after entering the menu
+  if (setFieldStateToDefault)
+  {
+    fieldStatePwm = NONE_PWM;
+    setFieldStateToDefault = false;
+  }
+
   if (switchAktive)
   {
     if (state == click)
@@ -517,6 +533,7 @@ void openPIDWindow()
     openPIDWindowBool = false;
     initializeMainWindow = true;
     selectAktiv = true;
+    setFieldStateToDefault = true;
   }
   if (openSet)
   {
@@ -1064,16 +1081,21 @@ void changeD()
 
 void changeSmartStandby()
 {
-  if(state == click){
+  if (state == click)
+  {
     tft.fillRect(125, 15, 20, 7, ST7735_BLACK);
-    if(smartStandbyOn == "On"){
+    if (smartStandbyOn == "On")
+    {
       smartStandbyOn = "Off";
-    }else{
+    }
+    else
+    {
       smartStandbyOn = "On";
     }
     tft.setCursor(125, 15);
     tft.print(smartStandbyOn);
   }
+  openSmartStandby = false;
 }
 
 void changeTimeTillStandby()
@@ -1104,6 +1126,10 @@ void changeTimeTillStandby()
   {
     // verringer timeTillStandby
     timeTillStandby = timeTillStandby -= 1;
+    if (timeTillStandby < 10)
+    {
+      timeTillStandby = 10;
+    }
   }
   tft.setTextColor(ST7735_ORANGE);
   printTimeTillStandby();
@@ -1140,6 +1166,54 @@ void printTimeTillStandby()
 
 void changeNumberOfCh()
 {
+  if (tester == 0)
+  {
+    // eintritts position speicher mit status
+    counterLastState3 = counter;
+    lastCounterStatePwm = counterSettings;
+    lastFieldStatePwm = fieldStatePwm;
+  }
+
+  if (state == click)
+  {
+    selectSettingsAktiv = false;
+    tester++;
+    switchAktive = false;
+  }
+
+  tft.setTextSize(1);
+  tft.fillRect(125, 55, 20, 7, ST7735_BLACK);
+  if (counter > counterLastState3)
+  {
+    // erhöhe timeTillStandby
+    numberOfCh = numberOfCh += 1;
+  }
+  else if (counter < counterLastState3)
+  {
+    // verringer timeTillStandby
+    numberOfCh = numberOfCh -= 1;
+    if (numberOfCh < 0)
+    {
+      numberOfCh = 0;
+    }
+  }
+  tft.setTextColor(ST7735_ORANGE);
+  tft.setCursor(125, 55);
+  tft.print(numberOfCh);
+  tft.setTextColor(ST7735_YELLOW);
+  counterLastState3 = counter;
+  if (tester == 2)
+  {
+    tft.setCursor(125, 55);
+    tft.print(numberOfCh);
+    openNumberOfCh = false;
+    selectSettingsAktiv = true;
+    switchAktive = true;
+    tester = 0;
+    // auf selected position vom eintritt zurück setzen
+    counterSettings = lastCounterStatePwm;
+    fieldStatePwm = lastFieldStatePwm;
+  }
 }
 
 void changeSollTemp()
@@ -1196,6 +1270,11 @@ void changeSollTemp()
   tft.print(set);
   tft.setTextColor(ST7735_YELLOW);
   counterLastState2 = counter;
+}
+
+void standbyMode()
+{
+  // todo
 }
 
 void loop()
