@@ -73,17 +73,13 @@ unsigned long encTime2 = 0;
 unsigned long buttonTime = 0;
 bool buttonLastState = false;
 bool buttonState = false; // always true, why ?
-bool buttonState1 = false;
-bool buttonState2 = true;
+bool buttonState1 = false;      //nicht mehr gebraucht
 bool buttonDetected = false;
 
 int selectedField = 100;
 int selectedFieldPrev = 0;
 bool fieldActive = false;
 int numberOfFields = 1;
-
-char window = 1;
-char window_prev = 0;
 
 int temperature = 100;
 float Set = 0.0;
@@ -108,26 +104,15 @@ String smartStandbyOn = "On";
 int timeTillStandby = 30;
 int numberOfCh = 2;
 
-int inWindow = 0;
-int buttonClicked = 0;
-int tempMemory = 0;
-bool tempMemoryButtonState = false;
-
 // to detect rotation of the button
 bool enc1 = false;
 bool enc2 = false;
 // counts the rotations of the button
 int counter = 0;
-// same as counter
-int counter2 = 0;
-// Counter for field selection
-int counter3 = 0;
 // Counter for SelectSettings
 int counterSettings = 0;
-int counterSettings2 = 0;
 bool selectSettingsAktiv = false;
-bool buttonhit = false;
-bool buttonhit2 = false;
+bool buttonhit = false; // wird nicht mehr gebraucht
 
 int counterLastState = 0;
 int counterLastState2 = 0;
@@ -150,18 +135,13 @@ int lastCounterStatePwm = 0;
 selectedFieldPwm lastFieldStatePwm = NONE_PWM;
 bool setFieldStateToDefault = true;
 
-// stops the display from blinking
+// stops the display from blinking, so display will be only refreshed when needed
 bool initializeMainWindow = true;
 bool stopInitializingMainWindow = false;
 bool selectAktiv = true;
-bool oneTimeOption = true;
-bool oneTimeOption2 = true;
+
 bool oneTimeOption3 = false;
-int buttonCounter = 2;
-bool test2 = false;
-bool oneTimeOption4 = false;
-bool buttonMemory = false;
-int counter4 = 0;
+int buttonCounter = 2;  // wird nicht mehr benötigt
 
 // For 1.44" and 1.8" TFT with ST7735 use:
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -289,14 +269,14 @@ void drawScreen1Dyn()
     prevMes = Mes;
   }
 
-  if (PWM != prevPWM)
+  if (pwm != prevPWM)
   {
     tft.setCursor(45, 32);
     tft.fillRect(45, 33, 12 * 3, 14, ST77XX_BLACK);
     tft.setTextSize(1);
-    tft.print(PWM, 1);
+    tft.print(pwm, 1);
     tft.setTextSize(2);
-    prevPWM = PWM;
+    prevPWM = pwm;
   }
 }
 // 160 * 128 pixel
@@ -342,10 +322,7 @@ void openSettingsWindow()
 
     tft.setCursor(100, 85);
     tft.print("Restore");
-    // tempMemoryButtonState = buttonState;
     stopInitializingMainWindow = true;
-    // oneTimeOption2 = false;
-    // oneTimeOption3 = false;
     selectSettingsAktiv = true;
 
     selectAktiv = false;
@@ -416,13 +393,12 @@ void openSettingsWindow()
   }
   if (openRestore)
   {
+    restoreSettings();
   }
 }
 
 void openPIDWindow()
 {
-  // counter2 speichern counter und selectAktiv stopt die SelectFunktion
-  //  if buttons is clicked
 
   if (counter != counterLastState2)
   {
@@ -611,6 +587,24 @@ void setPWM()
 {
 }
 
+void restoreSettings(){
+  if(state == click){
+    smartStandbyOn = "On";
+    timeTillStandby = 30;
+    numberOfCh = 2;
+    tft.setTextSize(1);
+    tft.setCursor(125, 15);
+    tft.fillRect(125, 15, 20, 7, ST7735_BLACK);
+    tft.print(smartStandbyOn);
+    tft.fillRect(125, 35, 20, 7, ST7735_BLACK);
+    printTimeTillStandby();
+    tft.setCursor(125, 55);
+    tft.fillRect(125, 55, 20, 7, ST7735_BLACK);
+    tft.print(numberOfCh);
+    openRestore = false;
+  }
+}
+
 void restorePWM()
 {
   if (state == click)
@@ -654,7 +648,7 @@ void resetMain()
 
 void selectMain()
 {
-  switch (counter2 % 3)
+  switch (counter % 3)
   {
   case 2:
     resetMain();
@@ -1280,7 +1274,7 @@ void standbyMode()
 void loop()
 {
   readButton();
-  buttonState = smoothButton();
+  //buttonState = smoothButton();
   delay(100);
 
   /*
@@ -1407,7 +1401,6 @@ void ISR1()
         if (enc2 == true) // CCW Rot
         {
           // counter--;
-          // counter3--;
         }
       }
       encTime1 = intTime;
@@ -1429,13 +1422,11 @@ void ISR2()
         if (enc1 == true) // CW Rot
         {
           counter++;
-          counter2++;
           counterSettings++;
         }
         else
         {
           counter--;
-          counter2--;
           counterSettings--;
         }
       }
