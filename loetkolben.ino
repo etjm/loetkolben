@@ -8,16 +8,18 @@
 #include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include "PID.hpp"
 
-#define TFT_CS 10
-#define TFT_RST 8 // Or set to -1 and connect to Arduino RESET pin
-#define TFT_DC 9
-#define HEATING_PIN 5
-#define inp_roatenc1 2
-#define inp_roatenc2 3
-#define inp_button 4
-#define TEMP_SENSE A0
-#define MAX_TEMP 450
-#define HistSize 101
+#define TFT_CS        10
+#define TFT_RST       8 // Or set to -1 and connect to Arduino RESET pin
+#define TFT_DC        6 // labelled A0
+//define TFT_SDA       12 //<- Pin numbers of the hardware SPI bus
+//define TFT_SCK       13
+#define HEATING_PIN   9
+#define inp_roatenc1  2
+#define inp_roatenc2  3
+#define inp_button    12
+#define TEMP_SENSE    A0
+#define MAX_TEMP      450
+#define HistSize      101
 
 // uint16_t ?  = 0bRRRRRGGGGGGBBBBB;
 uint16_t COLOR_GRAY = 0b0100001000001000;
