@@ -75,7 +75,6 @@ unsigned long encTime2 = 0;
 unsigned long buttonTime = 0;
 bool buttonLastState = false;
 bool buttonState = false; // always true, why ?
-bool buttonState1 = false;      //nicht mehr gebraucht
 bool buttonDetected = false;
 
 int selectedField = 100;
@@ -114,7 +113,6 @@ int counter = 0;
 // Counter for SelectSettings
 int counterSettings = 0;
 bool selectSettingsAktiv = false;
-bool buttonhit = false; // wird nicht mehr gebraucht
 
 int counterLastState = 0;
 int counterLastState2 = 0;
@@ -143,7 +141,6 @@ bool stopInitializingMainWindow = false;
 bool selectAktiv = true;
 
 bool oneTimeOption3 = false;
-int buttonCounter = 2;  // wird nicht mehr benötigt
 
 // For 1.44" and 1.8" TFT with ST7735 use:
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -197,12 +194,6 @@ void printPlot(int x, int y, char *data, int size, int lastIndex, uint16_t Color
   {
     tft.drawPixel(x + i - 1, y + 50 - ((data[(lastIndex + i + 1) % size]) / 2), Color);
   }
-  /*
-  for (int i = 0; i < HistSize; i++)
-    tft.drawPixel(x+i,y+40-(history[(currentHistPos + i)%HistSize])/2,ST77XX_BLACK);
-  for (int i = 0; i < HistSize; i++)
-    tft.drawPixel(x+i,y+28-(history[(currentHistPos + 1 + i)%HistSize])/2,ST77XX_RED);
-  */
 }
 
 float getSet()
@@ -890,45 +881,6 @@ void drawGraph()
   currentHistPos = (currentHistPos + 1) % HistSize;
 }
 
-// gibt für jeden 2. Button hit true zurück
-// funktioniert Delay teils im weg
-bool smoothButton()
-{
-  buttonState1 = digitalRead(inp_button);
-  if (buttonState1 == false)
-  {
-  }
-  if (buttonDetected == false and buttonState1 == false)
-  {
-    buttonDetected = true;
-    buttonTime = millis();
-  }
-  if (buttonDetected == true and buttonState1 == true and buttonTime + 50 < millis())
-  {
-    buttonDetected = false;
-  }
-  /*if (buttonState1 == false && buttonLastState == true)
-  {
-    buttonLastState = buttonState1;
-  }*/
-  if (buttonState1 != buttonLastState)
-  {
-    buttonCounter++;
-    buttonLastState = buttonState1;
-  }
-
-  if ((buttonCounter % 4) == 0)
-  {
-    buttonhit = true;
-  }
-  else if (buttonCounter % 2 == 0)
-  {
-    buttonhit = false;
-  }
-
-  return buttonhit;
-}
-
 void changeP()
 {
   if (tester == 0)
@@ -1276,7 +1228,6 @@ void standbyMode()
 void loop()
 {
   readButton();
-  //buttonState = smoothButton();
   delay(100);
 
   /*
@@ -1290,6 +1241,7 @@ void loop()
   tft.print(heaterPid_Out);
   tft.setTextSize(2);
   */
+  counterSettings = counter;
 
   // deaktivieren damit display nicht flackert
   if (initializeMainWindow)
@@ -1424,12 +1376,10 @@ void ISR2()
         if (enc1 == true) // CW Rot
         {
           counter++;
-          counterSettings++;
         }
         else
         {
           counter--;
-          counterSettings--;
         }
       }
       encTime2 = intTime;
