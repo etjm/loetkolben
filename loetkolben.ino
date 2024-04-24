@@ -1,11 +1,9 @@
-#include <Adafruit_GFX.h>
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include <Adafruit_GrayOLED.h>
 #include <Adafruit_SPITFT_Macros.h>
 #include <Adafruit_SPITFT.h>
 #include <gfxfont.h>
-
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7735.h> // Hardware-specific library for ST7735
 #include "PID.hpp"
 
 #define TFT_CS        10
@@ -83,9 +81,9 @@ bool fieldActive = false;
 int numberOfFields = 1;
 
 int temperature = 100;
-float Set = 0.0;
-float Mes = 100.0;
-int pwm = 0;
+float set = 0.0;
+float mes = 100.0;
+int heaterPWM = 0;
 float prevSet = 0.0;
 float prevMes = 0.0;
 int prevPWM = 1;
@@ -98,8 +96,6 @@ int test = 50;
 float p = 10.0; // eine nachkomma stelle und 0.1 verstellbar
 float i = 1.00; // zwei nachkomma stellen und 0.01 verstellbar
 float d = 1.0;  // eine nachkomma stelle und 0.1 verstellbar
-int set = 100;  // sollwert
-int mes = 0;    // istWert
 
 String smartStandbyOn = "On";
 int timeTillStandby = 30;
@@ -145,26 +141,20 @@ bool oneTimeOption3 = false;
 // For 1.44" and 1.8" TFT with ST7735 use:
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-PID PIDHeater1(0.0, 0.0, 0.0);
+PID PIDHeater1 = PID(&mes,&heaterPWM,&set,p,i,d);
 
 void setup()
 {
-  // put your setup code here, to run once:
-  // Use this initializer if using a 1.8" TFT screen:
+  // start serial
   Serial.begin(115200);
 
+  // initialize display
   tft.initR(INITR_BLACKTAB); // Init ST7735S chip, black tab
   tft.setRotation(3);
   tft.setTextWrap(true);
-
   tft.fillScreen(ST77XX_BLACK);
-
-  tft.drawPixel(160, 150, ST77XX_BLUE);
-  tft.setCursor(0, 140);
-  tft.setTextColor(ST7735_CYAN);
-  tft.print("Test1");
-
   tft.setTextColor(ST77XX_YELLOW);
+  tft.setTextSize(2);
 
   pinMode(HEATING_PIN, OUTPUT);
   analogWrite(HEATING_PIN, 0);
@@ -174,7 +164,6 @@ void setup()
   pinMode(inp_roatenc2, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(inp_roatenc1), ISR1, CHANGE);
   attachInterrupt(digitalPinToInterrupt(inp_roatenc2), ISR2, CHANGE);
-  tft.setTextSize(2);
 
   PIDHeater1.start();
 }
@@ -213,7 +202,7 @@ void drawScreen1Dyn()
   // Print Input fields
 
   // Print set temperature if didn't change
-  if (Set != prevSet or selectedField != selectedFieldPrev)
+  if (set != prevSet or selectedField != selectedFieldPrev)
   {
     tft.fillRect(60, 0, 12 * 5, 14, ST77XX_BLACK);
     tft.setCursor(60, 0);
@@ -224,12 +213,12 @@ void drawScreen1Dyn()
       {
         tft.setTextColor(ST77XX_ORANGE);
       }
-      tft.print(Set, 1);
+      tft.print(set, 1);
       tft.setTextColor(ST77XX_YELLOW);
     }
     else
-      tft.print(Set, 1);
-    prevSet = Set;
+      tft.print(set, 1);
+    prevSet = set;
   }
 
   if (selectedField != selectedFieldPrev)
@@ -251,25 +240,25 @@ void drawScreen1Dyn()
   selectedFieldPrev = selectedField;
 
   // Numbers
-  if (Mes != prevMes)
+  if (mes != prevMes)
   {
     tft.fillRect(60, 17, 12 * 5, 14, ST77XX_BLACK);
     tft.setCursor(60, 17);
-    if (Mes < MAX_TEMP)
-      tft.print(Mes, 1);
+    if (mes < MAX_TEMP)
+      tft.print(mes, 1);
     else
       tft.print("NC  -");
-    prevMes = Mes;
+    prevMes = mes;
   }
 
-  if (pwm != prevPWM)
+  if (heaterPWM != prevPWM)
   {
     tft.setCursor(45, 32);
     tft.fillRect(45, 33, 12 * 3, 14, ST77XX_BLACK);
     tft.setTextSize(1);
-    tft.print(pwm, 1);
+    tft.print(heaterPWM, 1);
     tft.setTextSize(2);
-    prevPWM = pwm;
+    prevPWM = heaterPWM;
   }
 }
 // 160 * 128 pixel
@@ -871,7 +860,7 @@ void drawGraph()
   test = test % 100;
 
   history[currentHistPos] = test;
-  history2[currentHistPos] = (((int)Set) - 100) / 4;
+  history2[currentHistPos] = (((int)set) - 100) / 4;
 
   deletePlot(20, 70, history, HistSize, currentHistPos);
   deletePlot(20, 70, history2, HistSize, currentHistPos);
@@ -1231,7 +1220,7 @@ void loop()
   delay(100);
 
   /*
-  PIDHeater1.setSetpoint(Set);
+  PIDHeater1.setSetpoint(set);
   PIDHeater1.setParameters(5.0, 0.0, 0.0);
   PIDHeater1.calc(getSet);
   float heaterPid_Out = PIDHeater1.getControlValue();
@@ -1295,44 +1284,44 @@ void loop()
 
   // showPWMState(heaterPid_Out);
 
-  // if (Mes > MAX_TEMP){PWM=0;}
-  analogWrite(HEATING_PIN, pwm);
+  // if (mes > MAX_TEMP){PWM=0;}
+  analogWrite(HEATING_PIN, heaterPWM);
 }
 
 void showPWMState(float heaterPidOut)
 {
   // Show PWM State
-  if (pwm > 0)
+  if (heaterPWM > 0)
     tft.fillRect(150, 10, 10, 10, ST77XX_YELLOW);
   else
     tft.fillRect(150, 10, 10, 10, ST77XX_BLACK);
 
-  if (pwm < 0)
-    pwm = 0;
-  if (pwm > 255)
-    pwm = 255;
+  if (heaterPWM < 0)
+    heaterPWM = 0;
+  if (heaterPWM > 255)
+    heaterPWM = 255;
 
   if (heaterPidOut <= 0.0)
   {
-    pwm = 0;
+    heaterPWM = 0;
   }
   else if (heaterPidOut <= 255.0)
   {
-    pwm = (int)heaterPidOut;
+    heaterPWM = (int)heaterPidOut;
   }
   else
   {
-    pwm = 255;
+    heaterPWM = 255;
   }
 
-  Mes = getTemp();
+  mes = getTemp();
   if (!buttonState)
   {
-    pwm = round(Set) % 255;
+    heaterPWM = round(set) % 255;
   }
   else
   {
-    pwm = 0;
+    heaterPWM = 0;
   }
 }
 
