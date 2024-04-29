@@ -204,11 +204,6 @@ void printPlot(int x, int y, char *data, int size, int lastIndex, uint16_t Color
   */
 }
 
-float getSet()
-{
-  return 110.0;
-}
-
 void drawDegCel(int xpos, int ypos)
 {
   tft.drawCircle(xpos + 2, ypos + 2, 2, ST77XX_YELLOW);
@@ -919,13 +914,23 @@ void selectPWM()
 
 void drawGraph()
 {
-  test += ((random() % 5) - 2);
-  while (test < 0)
-    test = test + 100;
-  test = test % 100;
+  // test += ((random() % 5) - 2);
+  // while (test < 0)
+  //   test = test + 100;
+  // test = test % 100;
 
-  history[currentHistPos] = test;
-  history2[currentHistPos] = (((int)set) - 100) / 4;
+  
+  char point1 = (mes-100)/4;
+  char point2 = (((int)set)-100)/4;
+
+  // cap values
+  point1 = point1 < 0 ? 0 : point1;
+  point1 = point1 > 100 ? 100 : point1;
+  point2 = point2 < 0 ? 0 : point2;
+  point2 = point2 > 100 ? 100 : point2 ;
+
+  history[currentHistPos] = point1;
+  history2[currentHistPos] = point2;
 
   deletePlot(20, 70, history, HistSize, currentHistPos);
   deletePlot(20, 70, history2, HistSize, currentHistPos);
@@ -1313,7 +1318,6 @@ void loop()
     openMainWindow();
     // drawScreen1Dyn();
   }
-  // drawGraph();
 
   // schauen das display nicht flackert
   if (counter != counterLastState)
@@ -1353,21 +1357,31 @@ void loop()
   {
     openSettingsWindow();
   }
-  if (openPIDWindowBool)
+  else if (openPIDWindowBool)
   {
     openPIDWindow();
   }
-  if (changeSollTempBool)
+  else  if (changeSollTempBool)
   {
     changeSollTemp();
   }
-  if (setSoll300Bool)
+  else  if (setSoll300Bool)
   {
     setSollTo300();
   }
-  if (setSoll350Bool)
+  else  if (setSoll350Bool)
   {
     setSollTo350();
+  }
+  else {
+    // draw dynamic stuff
+    drawGraph();
+    // tft.print()
+    mes = getTemp();
+    tft.setCursor(75, 17);
+    tft.setTextSize(2);
+    tft.fillRect(75, 17, 42, 16, ST77XX_BLACK);
+    tft.print(mes,0);
   }
 
   // showPWMState(heaterPid_Out);
