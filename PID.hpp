@@ -160,9 +160,9 @@ void PID::calc()
 
     float p = e * m_p;
 
-    m_sum += e; // + (e*del t)
-    float i = m_i * m_sum;
-    // m_sum += (e * m_i) //(e * del t)
+    // m_sum += e; // + (e*del t)
+    // float i = m_i * m_sum;
+    m_sum += (e * m_i); //(e * del t)
 
     // Overrun protection
     if (m_sum > m_maxOutput)
@@ -170,6 +170,7 @@ void PID::calc()
     else if (m_sum < m_minOutput)
         m_sum = m_minOutput;
 
+    float i = m_sum;
 
     float d = m_d * (e - m_prevE); // * delta_t
     m_prevE = e;
