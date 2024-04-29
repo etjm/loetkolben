@@ -951,19 +951,11 @@ void changeP()
     switchAktive = false;
   }
 
+  if(counter != 0)
+    tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
+  p = p + 0.1*counter;
+  counter = 0;
   tft.setTextSize(2);
-  tft.setCursor(15, 20);
-  tft.fillRect(45, 20, 50, 15, ST7735_BLACK);
-  if (counter > counterLastState3)
-  {
-    // erhöhe p
-    p = p += 0.1;
-  }
-  else if (counter < counterLastState3)
-  {
-    // verringer p
-    p = p -= 0.1;
-  }
   tft.setCursor(45, 20);
   tft.setTextColor(ST7735_ORANGE);
   tft.print(p, 1);
@@ -998,21 +990,12 @@ void changeI()
     tester++;
     switchAktive = false;
   }
+  if(counter != 0)
+    tft.fillRect(45, 42, 50, 15, ST7735_BLACK);
+  i = i + 0.01*counter;
+  counter = 0;
 
   tft.setTextSize(2);
-  tft.setCursor(15, 42);
-  if (counter > counterLastState3)
-  {
-    // erhöhe i
-    tft.fillRect(45, 42, 50, 15, ST7735_BLACK);
-    i = i += 0.01;
-  }
-  else if (counter < counterLastState3)
-  {
-    // verringer i
-    tft.fillRect(45, 42, 50, 15, ST7735_BLACK);
-    i = i -= 0.01;
-  }
   tft.setCursor(45, 42);
   tft.setTextColor(ST7735_ORANGE);
   tft.print(i, 2);
@@ -1047,21 +1030,11 @@ void changeD()
     tester++;
     switchAktive = false;
   }
-
+  if(counter != 0)
+    tft.fillRect(45, 64, 50, 15, ST7735_BLACK);
+  d = d + 0.01*counter;
+  counter = 0;
   tft.setTextSize(2);
-  tft.setCursor(15, 64);
-  if (counter > counterLastState3)
-  {
-    // erhöhe d
-    tft.fillRect(45, 64, 50, 15, ST7735_BLACK);
-    d = d += 0.1;
-  }
-  else if (counter < counterLastState3)
-  {
-    // verringer d
-    tft.fillRect(45, 64, 50, 15, ST7735_BLACK);
-    d = d -= 0.1;
-  }
   tft.setCursor(45, 64);
   tft.setTextColor(ST7735_ORANGE);
   tft.print(d, 1);
