@@ -96,6 +96,9 @@ char history2[HistSize] = {0};
 int currentHistPos = 0;
 int test = 50;
 
+unsigned long lastMessureTime = 0;
+unsigned long messureDelta = 50; // ms
+
 float p = 10.0; // eine nachkomma stelle und 0.1 verstellbar
 float i = 1.00; // zwei nachkomma stellen und 0.01 verstellbar
 float d = 1.0;  // eine nachkomma stelle und 0.1 verstellbar
@@ -1385,46 +1388,22 @@ void loop()
   }
 
   // showPWMState(heaterPid_Out);
+  unsigned long now = millis();
+  unsigned long MessureTime = (now - lastMessureTime);
+  if (MessureTime > messureDelta){
+    analogWrite(HEATING_PIN,0);
+    delay(5); // time to let the voltage settle
+    mes = getTemp();
+    lastMessureTime = now;
+  }
+
+  PIDHeater1.calc(); // Calc only if new measurement?
+
+  if (mes > 390.0) // Protect tip from damages
+    heaterPWM = 0;
 
   // if (mes > MAX_TEMP){PWM=0;}
   analogWrite(HEATING_PIN, heaterPWM);
-}
-
-void showPWMState(float heaterPidOut)
-{
-  // Show PWM State
-  if (heaterPWM > 0)
-    tft.fillRect(150, 10, 10, 10, ST77XX_YELLOW);
-  else
-    tft.fillRect(150, 10, 10, 10, ST77XX_BLACK);
-
-  if (heaterPWM < 0)
-    heaterPWM = 0;
-  if (heaterPWM > 255)
-    heaterPWM = 255;
-
-  if (heaterPidOut <= 0.0)
-  {
-    heaterPWM = 0;
-  }
-  else if (heaterPidOut <= 255.0)
-  {
-    heaterPWM = (int)heaterPidOut;
-  }
-  else
-  {
-    heaterPWM = 255;
-  }
-
-  mes = getTemp();
-  if (!buttonState)
-  {
-    heaterPWM = round(set) % 255;
-  }
-  else
-  {
-    heaterPWM = 0;
-  }
 }
 
 float getTemp()
